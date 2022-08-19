@@ -10,6 +10,7 @@ from customRansac import customFindHomographyPlane3D
 from customRansac import customFindHomographyNormalSampling3D
 from customRansac import customFindHomography3DTree
 from customRansac import customFindHomographyDimension
+from customRansac import customFindHomographyDimension2
 import time
 import json
 
@@ -105,8 +106,8 @@ while((oldSize != newSize) and len(good_matches) >= 20):
     #H, mask =  customFindHomographyPlane3D(obj, scene, point_cloud, 0.55)
     #H, mask = customFindHomographyNormalSampling3D(obj, scene, point_cloud, 0.4, 0.1)
     #H, mask = customFindHomography3DTree(obj, scene, point_cloud, 0.4)
-    H, mask = customFindHomographyDimension(
-        obj, scene, point_cloud, 0.8, dimension)  # migliore è 0.6 o 1.0
+    #H, mask = customFindHomographyDimension(obj, scene, point_cloud, 0.8, dimension)  # migliore è 0.6 o 1.0
+    H, mask = customFindHomographyDimension2(obj, scene, point_cloud, 0.8, dimension)  # migliore è 0.6 o 1.0
 
     # H homography from template to scene
     H = np.asarray(H)

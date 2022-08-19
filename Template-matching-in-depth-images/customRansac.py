@@ -509,6 +509,65 @@ def dimensionSampling(corr, point_cloud, dimension):
 
     return randomFour
 
+def customFindHomographyDimension2(obj,scene,point_cloud, thresh, dimension):
+    dimension = np.array(dimension)
+    diagonal = sqrt(np.dot(dimension,dimension.T))
+    myRandom_1 = Random(time.time())
+    myRandom_1.seed(1234)
+    
+    correspondenceList = []
+
+    for z in range(len(scene[:,0])):
+            (x1, y1) = obj[z,0] , obj[z,1]
+            (x2, y2) = scene[z,0] , scene[z,1]
+            correspondenceList.append([x1, y1, x2, y2])
+
+    corr = np.matrix(correspondenceList)
+
+    maxInliers = []
+    finalH = None
+    finalMask = np.zeros(shape = (len(obj[:,0])) )
+    for i in range(300):
+
+        mask = np.zeros(shape = (len(obj[:,0])) )
+
+        #find 4 random points to calculate a homography
+        corr1 = corr[myRandom_1.randrange(0, len(corr))]
+        firstPoint = point_cloud[int(corr1[0, 3]), int(corr1[0, 2])] #pos in the space of corr1
+        randomFour = np.vstack(corr1)
+        
+        while len(corr) and len(randomFour)<4:
+            c = corr[myRandom_1.randrange(0, len(corr))]
+            secondPoint = point_cloud[int(c[0, 3]), int(c[0, 2])]
+            diff = firstPoint-secondPoint
+            dist = sqrt(np.dot(diff,diff.T))*0.7
+            if dist<= diagonal:
+                randomFour = np.vstack((randomFour,c))
+
+        #call the homography function on those points
+        h = calculateHomography(randomFour)
+        inliers = []
+        
+
+        for i in range(len(corr)):
+            d = geometricDistance(corr[i], h)
+            if d < 4:
+                inliers.append(corr[i])
+                mask[i] = 1
+                
+
+        if len(inliers) > len(maxInliers):
+            
+            maxInliers = inliers
+            finalH = h
+            finalMask = mask
+
+        #print ("Corr size: ", len(corr), " NumInliers: ", len(inliers), "Max inliers: ", len(maxInliers))
+        if len(maxInliers) > (len(corr)*thresh):
+            break
+
+    return finalH, finalMask;
+#
 
 def customFindHomographyDimension(obj, scene, point_cloud, thresh, dimension):
 
