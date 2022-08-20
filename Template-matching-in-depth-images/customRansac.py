@@ -527,7 +527,7 @@ def customFindHomographyDimension2(obj,scene,point_cloud, thresh, dimension):
     maxInliers = []
     finalH = None
     finalMask = np.zeros(shape = (len(obj[:,0])) )
-    for i in range(300):
+    for i in range(200):
 
         mask = np.zeros(shape = (len(obj[:,0])) )
 

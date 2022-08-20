@@ -4,6 +4,8 @@ from cv2 import COLOR_RGB2GRAY
 import numpy as np
 import numpy.ma as ma
 import math
+
+from sympy import false
 from canny_filter_method import applyCannyFilter
 from customRansac import customFindHomography, buildKDTree
 from customRansac import customFindHomographyPlane3D
@@ -15,9 +17,9 @@ import time
 import json
 
 
-img_scene = cv.imread("3D/5/rgb_image.jpg")
-point_cloud = np.load("3D/5/pointCloud.npy")
-depth_image = cv.imread("3D/5/depth_image.jpg", cv.IMREAD_GRAYSCALE)
+img_scene = cv.imread("3D/6/rgb_image.jpg")
+point_cloud = np.load("3D/6/pointCloud.npy")
+depth_image = cv.imread("3D/6/depth_image.jpg", cv.IMREAD_GRAYSCALE)
 
 template = "barchette.png"
 template_path = "Templates/" + template

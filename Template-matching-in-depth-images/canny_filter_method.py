@@ -1,5 +1,7 @@
+import itertools
 import cv2 as cv
 from cv2 import COLOR_RGB2GRAY
+from matplotlib import lines
 import numpy as np
 import numpy.ma as ma
 import math
@@ -54,8 +56,13 @@ def applyCannyFilter(img_scene, depth_image, sift_mask, keypoints_scene, descrip
         final_lines, lines_scene = addOtherPerpendicularLines(
             length, final_lines, lines_scene, uncertainty)
 
+
     image_to_show = drawHoughLines(final_lines, scene_copy, 1)
     cv.imshow('Final lines', image_to_show)
+
+    image_to_show = scene_copy2
+    list_of_rectangles= rectangle_detection_from_lines(final_lines,scene_copy2)
+    cv.imshow('Final rectangles', image_to_show)
 
     dist_threshold = 50
     final_kp_scene, final_des_scene = findKeypointsWithSomeDistance(
@@ -74,6 +81,56 @@ def applyCannyFilter(img_scene, depth_image, sift_mask, keypoints_scene, descrip
     # Print number of keypoints after applying the filter
     print("AFTER FILTER: " + str(len(final_kp_scene)))
     return descriptors_scene, keypoints_scene,
+
+def rectangle_detection_from_lines(final_lines,image):
+    
+    rectangles=[]
+    for m,n in itertools.combinations(final_lines,2):
+        m1=np.array([m[0],m[1],1])
+        m2=np.array([m[2],m[3],1])
+        n1=np.array([n[0],n[1],1])
+        n2=np.array([n[2],n[3],1])
+        #min distance
+        m= np.reshape(m,(2,2))
+        n= np.reshape(n,(2,2))
+        m = np.concatenate((m,m),axis=0)
+        n = np.concatenate((n,np.flipud(n)),axis=0)
+        result= np.power(m-n,2)
+        result= result[:,0]+result[:,1]
+
+        if np.min(result) <60: #search intersections
+            #lines m1-m2 n1-n2
+            l1 = np.cross(m1,m2)
+            l1 = l1/l1[2]
+            l2 = np.cross(n1,n2)
+            l2 = l2/l2[2]
+            ##angle between l1 and l2
+            angle = np.rad2deg(np.arccos(np.dot(l1[0:2]/ np.linalg.norm(l1[0:2]), l2[0:2]/ np.linalg.norm(l2[0:2]))))
+            if angle >=65: 
+                #vanishing points
+                v1 = np.array([l1[1], -l1[0], 0])
+                v2 = np.array([l2[1], -l2[0], 0])
+                #compute the 4 intersections
+                int1 = np.cross(np.cross(v2,m1),np.cross(v1,n1))
+                int2 = np.cross(np.cross(v2,m1),np.cross(v1,n2))
+                int3 = np.cross(np.cross(v2,m2),np.cross(v1,n1))
+                int4 = np.cross(np.cross(v2,m2),np.cross(v1,n2))
+                int1 = (int1/int1[2]).astype(int)
+                int2 = (int2/int2[2]).astype(int)
+                int3 = (int3/int3[2]).astype(int)
+                int4 = (int4/int4[2]).astype(int)
+                inter = [int1[0:2],int2[0:2],int4[0:2],int3[0:2]]
+                #draw the rectangle
+                color = list(np.random.random(size=3) * 256)
+                cv.line(image, inter[0],inter[1],color,2,cv.LINE_AA)
+                cv.line(image, inter[1],inter[2],color,2,cv.LINE_AA)
+                cv.line(image, inter[2],inter[3],color,2,cv.LINE_AA)
+                cv.line(image, inter[3],inter[0],color,2,cv.LINE_AA)
+                #add the rectangle to the list
+                rectangles.append(inter)
+
+    return rectangles;
+           
 
 
 # Draw Hough lines on an image
