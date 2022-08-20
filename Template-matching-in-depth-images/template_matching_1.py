@@ -1,6 +1,7 @@
 from ast import While
 import cv2 as cv
 from cv2 import COLOR_RGB2GRAY
+from cv2 import rectangle
 import numpy as np
 import numpy.ma as ma
 import math
@@ -17,9 +18,9 @@ import time
 import json
 
 
-img_scene = cv.imread("3D/6/rgb_image.jpg")
-point_cloud = np.load("3D/6/pointCloud.npy")
-depth_image = cv.imread("3D/6/depth_image.jpg", cv.IMREAD_GRAYSCALE)
+img_scene = cv.imread("3D/avanti_dietro2/rgb_image.jpg")
+point_cloud = np.load("3D/avanti_dietro2/pointCloud.npy")
+depth_image = cv.imread("3D/avanti_dietro2/depth_image.jpg", cv.IMREAD_GRAYSCALE)
 
 template = "barchette.png"
 template_path = "Templates/" + template
@@ -59,7 +60,7 @@ print("BEFORE FILTER: " + str(len(keypoints_scene)))
 # Put true this flag if you want to use a filter which delete useless keypoints
 filter_flag = True
 if filter_flag:
-    descriptors_scene, keypoints_scene = applyCannyFilter(
+    descriptors_scene, keypoints_scene,rectangles = applyCannyFilter(
         img_scene, depth_image, sift_mask, keypoints_scene, descriptors_scene)
 
 # Matching descriptor vectors with a FLANN based matcher

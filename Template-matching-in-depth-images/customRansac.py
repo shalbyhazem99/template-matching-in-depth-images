@@ -527,7 +527,7 @@ def customFindHomographyDimension2(obj,scene,point_cloud, thresh, dimension):
     maxInliers = []
     finalH = None
     finalMask = np.zeros(shape = (len(obj[:,0])) )
-    for i in range(200):
+    for i in range(150):
 
         mask = np.zeros(shape = (len(obj[:,0])) )
 
@@ -544,6 +544,52 @@ def customFindHomographyDimension2(obj,scene,point_cloud, thresh, dimension):
             if dist<= diagonal:
                 randomFour = np.vstack((randomFour,c))
 
+        #call the homography function on those points
+        h = calculateHomography(randomFour)
+        inliers = []
+        
+
+        for i in range(len(corr)):
+            d = geometricDistance(corr[i], h)
+            if d < 4:
+                inliers.append(corr[i])
+                mask[i] = 1
+                
+
+        if len(inliers) > len(maxInliers):
+            
+            maxInliers = inliers
+            finalH = h
+            finalMask = mask
+
+        #print ("Corr size: ", len(corr), " NumInliers: ", len(inliers), "Max inliers: ", len(maxInliers))
+        if len(maxInliers) > (len(corr)*thresh):
+            break
+
+    return finalH, finalMask;
+#
+def customFindHomographyRectangles(obj,scene, thresh,correspondenceList2):
+    correspondenceList = []
+
+    for z in range(len(scene[:,0])):
+            (x1, y1) = obj[z,0] , obj[z,1]
+            (x2, y2) = scene[z,0] , scene[z,1]
+            correspondenceList.append([x1, y1, x2, y2])
+
+    corr = np.matrix(correspondenceList)
+    corr2 = np.matrix(correspondenceList2)
+
+    maxInliers = []
+    finalH = None
+    finalMask = np.zeros(shape = (len(obj[:,0])) )
+    
+    for i in range(50):
+        mask = np.zeros(shape = (len(obj[:,0])) )
+        randomlist=random.sample(range(0, len(corr2)), thresh)
+        randomFour = np.vstack((corr2[randomlist[0]],(corr2[randomlist[0]])))
+         # find 4 random points to calculate a homography
+        for i in range(2,len(randomlist)):
+            randomFour = np.vstack((randomFour,(corr2[randomlist[i]])))
         #call the homography function on those points
         h = calculateHomography(randomFour)
         inliers = []

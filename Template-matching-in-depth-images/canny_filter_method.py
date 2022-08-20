@@ -6,6 +6,8 @@ import numpy as np
 import numpy.ma as ma
 import math
 from customRansac import doIntersect
+from shapely.geometry import Point
+from shapely.geometry.polygon import Polygon
 
 
 def applyCannyFilter(img_scene, depth_image, sift_mask, keypoints_scene, descriptors_scene):
@@ -46,6 +48,86 @@ def applyCannyFilter(img_scene, depth_image, sift_mask, keypoints_scene, descrip
 
     final_lines, lines_scene = selectEdgesFoundInDepthAndRGBImages(
         lines_scene, lines_depth, uncertainty)
+    
+    length = len(final_lines)
+    final_lines, lines_scene = addPerpendicularLines(
+        lines_scene, final_lines, uncertainty)
+
+    # Check if the previous added lines have lines perpendicular to themself
+    if length < len(final_lines):
+        final_lines, lines_scene = addOtherPerpendicularLines(
+            length, final_lines, lines_scene, uncertainty)
+
+
+    image_to_show = drawHoughLines(final_lines, scene_copy, 1)
+    cv.imshow('Final lines', image_to_show)
+
+    image_to_show = scene_copy2
+    list_of_rectangles= rectangle_detection_from_lines(final_lines,scene_copy2)
+    cv.imshow('Final rectangles', image_to_show)
+
+   
+    dist_threshold = 50
+    final_kp_scene, final_des_scene = findKeypointsWithSomeDistance(
+        keypoints_scene, final_lines, dist_threshold, depth_edges, descriptors_scene)
+    
+    #final_kp_scene, final_des_scene = findKeypointsWithSomeDistance2(
+    #   keypoints_scene, descriptors_scene,list_of_rectangles)
+
+    # final_kp_scene, final_des_scene = findKeypointsInTheRectangles(
+    #     keypoints_scene, final_lines, depth_edges, descriptors_scene, uncertainty)
+
+    descriptors_scene = np.asarray(final_des_scene)
+    keypoints_scene = np.asarray(final_kp_scene)
+
+    for kp in keypoints_scene:
+        cv.circle(cdst_copy, (int(kp.pt[0]), int(
+            kp.pt[1])), radius=1, color=(0, 255, 0), thickness=-1)
+    cv.imshow('Keypoints found', cdst_copy)
+
+    # Print number of keypoints after applying the filter
+    print("AFTER FILTER: " + str(len(final_kp_scene)))
+    return descriptors_scene, keypoints_scene,list_of_rectangles ## maybe the division of key points must be done here to avoid repeating the same twice
+
+def applyCannyFilter2(img_scene, depth_image, sift_mask, keypoints_scene, descriptors_scene):
+    # Apply Canny filter on depth image
+    depth_denoised = cv.fastNlMeansDenoising(depth_image, None, 80, 7, 21)
+    u8_denoised = (depth_denoised*255).astype(np.uint8)
+    u8_denoised = cv.bitwise_and(u8_denoised, u8_denoised, mask=sift_mask)
+    edges = cv.Canny(u8_denoised, 100, 170, None, 3)
+
+    # Apply Canny filter on RGB image
+    gray_scene = cv.cvtColor(img_scene, COLOR_RGB2GRAY)
+    blurred_scene = cv.medianBlur(gray_scene, 9)
+    scene_edges = cv.Canny(blurred_scene, 30, 150, None, 3)
+
+    depth_edges = cv.cvtColor(edges, cv.COLOR_GRAY2BGR)
+    scene = cv.cvtColor(scene_edges, cv.COLOR_GRAY2BGR)
+    scene_copy = np.copy(scene)
+    scene_copy2 = np.copy(scene)
+
+    # Copia per mostrare tutti i keypoints
+    cdst_copy = np.copy(depth_edges)
+    cdst_copy2 = np.copy(depth_edges)
+    # for kp in keypoints_scene:
+    #	cv.circle(cdst_copy, (int(kp.pt[0]), int(kp.pt[1])), radius=0, color=(255, 0, 0), thickness=-1)
+
+    # Find the lines on the images
+    lines_depth = cv.HoughLinesP(edges, 1, np.pi / 180, 50, None, 70, 40)
+    lines_scene = cv.HoughLinesP(scene_edges, 1, np.pi/180, 50, None, 30, 30)
+
+    # Show Hough lines on the image
+    image_to_show = drawHoughLines(lines_depth, depth_edges)
+    cv.imshow('Lines', image_to_show)
+
+    image_to_show = drawHoughLines(lines_scene, scene)
+    cv.imshow('Lines_scene', image_to_show)
+
+    final_lines = []
+    uncertainty = 15
+
+    final_lines, lines_scene = selectEdgesFoundInDepthAndRGBImages(
+        lines_scene, lines_depth, uncertainty)
 
     length = len(final_lines)
     final_lines, lines_scene = addPerpendicularLines(
@@ -64,9 +146,9 @@ def applyCannyFilter(img_scene, depth_image, sift_mask, keypoints_scene, descrip
     list_of_rectangles= rectangle_detection_from_lines(final_lines,scene_copy2)
     cv.imshow('Final rectangles', image_to_show)
 
-    dist_threshold = 50
-    final_kp_scene, final_des_scene = findKeypointsWithSomeDistance(
-        keypoints_scene, final_lines, dist_threshold, depth_edges, descriptors_scene)
+
+    final_kp_scene, final_des_scene = findKeypointsWithSomeDistance2(
+        keypoints_scene, descriptors_scene,list_of_rectangles)
     # final_kp_scene, final_des_scene = findKeypointsInTheRectangles(
     #     keypoints_scene, final_lines, depth_edges, descriptors_scene, uncertainty)
 
@@ -80,7 +162,7 @@ def applyCannyFilter(img_scene, depth_image, sift_mask, keypoints_scene, descrip
 
     # Print number of keypoints after applying the filter
     print("AFTER FILTER: " + str(len(final_kp_scene)))
-    return descriptors_scene, keypoints_scene,
+    return descriptors_scene, keypoints_scene,list_of_rectangles ## maybe the division of key points must be done here to avoid repeating the same twice
 
 def rectangle_detection_from_lines(final_lines,image):
     
@@ -131,8 +213,6 @@ def rectangle_detection_from_lines(final_lines,image):
 
     return rectangles;
            
-
-
 # Draw Hough lines on an image
 def drawHoughLines(lines, image, n_param=2):
     if lines is not None:
@@ -314,6 +394,25 @@ def findKeypointsWithSomeDistance(keypoints_scene, final_lines, dist_threshold, 
         if near:
             final_kp_scene.append(kp)
             final_des_scene.append(descriptors_scene[j])
+    return final_kp_scene, final_des_scene
+
+# Find all the keypoints that are inside rectangles
+def findKeypointsWithSomeDistance2(keypoints_scene,descriptors_scene,rects):
+    rectangles = []
+    final_kp_scene = []
+    final_des_scene = []
+    for rect in rects:
+        rectangles.append(Polygon([Point(rect[0]),Point(rect[1]),Point(rect[2])]))
+
+    for j in range(0, len(keypoints_scene)):
+        kp = keypoints_scene[j]
+        point = Point(int(kp.pt[0]), int(kp.pt[1]))
+        for polygon in rectangles:
+            if polygon.contains(point):
+                final_kp_scene.append(kp)
+                final_des_scene.append(descriptors_scene[j])
+                break
+
     return final_kp_scene, final_des_scene
 
 
