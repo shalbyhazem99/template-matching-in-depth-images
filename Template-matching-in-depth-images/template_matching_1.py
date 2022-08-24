@@ -18,9 +18,9 @@ import time
 import json
 
 
-img_scene = cv.imread("3D/avanti_dietro2/rgb_image.jpg")
-point_cloud = np.load("3D/avanti_dietro2/pointCloud.npy")
-depth_image = cv.imread("3D/avanti_dietro2/depth_image.jpg", cv.IMREAD_GRAYSCALE)
+img_scene = cv.imread("3D/5/rgb_image.jpg")
+point_cloud = np.load("3D/5/pointCloud.npy")
+depth_image = cv.imread("3D/5/depth_image.jpg", cv.IMREAD_GRAYSCALE)
 
 template = "barchette.png"
 template_path = "Templates/" + template

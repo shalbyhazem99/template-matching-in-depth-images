@@ -3,7 +3,7 @@ import numpy as np
 import numpy.ma as ma
 import math
 
-point_cloud = np.load("3D/4/pointCloud.npy")  # [height][width][xyz]
+point_cloud = np.load("3D/1/pointCloud.npy")  # [height][width][xyz]
 
 height = 480
 width = 640
@@ -29,12 +29,12 @@ for h in range(height):
 
 for h in range(height):
     for w in range(width):
-        depth_image[h][w] = (point_cloud[h][w][2] - minimum) * \
-            255.0 / (maximum - minimum)
-        #depth_image[h][w] = point_cloud[h][w][2]
+        #depth_image[h][w] = (point_cloud[h][w][2] - minimum) * \
+        #    255.0 / (maximum - minimum)
+        depth_image[h][w] = point_cloud[h][w][2]
 
 
 cv.imshow('Depth Image', depth_image)
-#cv.imwrite('3D/2/depth_image.jpg', depth_image)
+cv.imwrite('3D/1/depth_image.jpg', depth_image)
 cv.waitKey()
 cv.destroyAllWindows()

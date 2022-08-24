@@ -119,7 +119,6 @@ def applyCannyFilter2(img_scene, depth_image, sift_mask, keypoints_scene, descri
     # Show Hough lines on the image
     image_to_show = drawHoughLines(lines_depth, depth_edges)
     cv.imshow('Lines', image_to_show)
-
     image_to_show = drawHoughLines(lines_scene, scene)
     cv.imshow('Lines_scene', image_to_show)
 
@@ -143,8 +142,9 @@ def applyCannyFilter2(img_scene, depth_image, sift_mask, keypoints_scene, descri
     cv.imshow('Final lines', image_to_show)
 
     image_to_show = scene_copy2
-    list_of_rectangles= rectangle_detection_from_lines(final_lines,scene_copy2)
+    list_of_rectangles= rectangle_detection_from_lines(final_lines,image_to_show)
     cv.imshow('Final rectangles', image_to_show)
+    cv.imwrite("rectangles-example.jpg", image_to_show)
 
 
     final_kp_scene, final_des_scene = findKeypointsWithSomeDistance2(
